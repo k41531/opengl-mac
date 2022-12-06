@@ -3,6 +3,12 @@
 #include<glad/gl.h>
 #include<GLFW/glfw3.h>
 
+
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
+
 #include"shaderClass.h"
 #include"VAO.h"
 #include"VBO.h"
@@ -13,20 +19,38 @@
 // Vertices coordinates
 GLfloat vertices[] =
 {
-	-0.5f, -0.5f * float(sqrt(3)) / 3, 0.0f, // Lower left corner
-	0.5f, -0.5f * float(sqrt(3)) / 3, 0.0f, // Lower right corner
-	0.0f, 0.5f * float(sqrt(3)) * 2 / 3, 0.0f, // Upper corner
-	-0.5f / 2, 0.5f * float(sqrt(3)) / 6, 0.0f, // Inner left
-	0.5f / 2, 0.5f * float(sqrt(3)) / 6, 0.0f, // Inner right
-	0.0f, -0.5f * float(sqrt(3)) / 3, 0.0f // Inner down
+	1.0f ,1.0f, 1.0f,
+	-1.0f,1.0f, 1.0f,
+	-1.0f,1.0f, -1.0f,
+	1.0f ,1.0f, -1.0f,
+	1.0f ,-1.0f, 1.0f,
+	-1.0f,-1.0f, 1.0f,
+	-1.0f,-1.0f, -1.0f,
+	1.0f ,-1.0f, -1.0f,
 };
 
 // Indices for vertices order
 GLuint indices[] =
 {
-	0, 3, 5, // Lower left triangle
-	3, 2, 4, // Lower right triangle
-	5, 4, 1 // Upper triangle
+	// Ceiling
+	0, 1, 2,
+	2, 3, 0,
+
+	// Floor
+	4, 5, 6,
+	6, 7, 4,
+	
+	0, 1, 5,
+	5, 4, 0,
+
+	1, 2, 6,
+	6, 5, 1,
+
+	2, 3, 7,
+	7, 6, 2,
+
+	3, 0, 4,
+	4, 7, 3,
 };
 
 int main()
@@ -83,6 +107,21 @@ int main()
 	VBO1.Unbind();
 	EBO1.Unbind();;
 
+	// 射影行列：45&deg;の視界、アスペクト比4:3、表示範囲：0.1単位  100単位
+	glm::mat4 Projection = glm::perspective(glm::radians(45.0f), 1.0f, 0.1f, 100.0f);
+	// カメラ行列
+	glm::mat4 View       = glm::lookAt(
+		glm::vec3(4,3,3), // ワールド空間でカメラは(4,3,3)にあります。
+		glm::vec3(0,0,0), // 原点を見ています。
+		glm::vec3(0,1,0)  // 頭が上方向(0,-1,0にセットすると上下逆転します。)
+	);
+	// モデル行列：単位行列(モデルは原点にあります。)
+	glm::mat4 Model      = glm::mat4(1.0f);  // 各モデルを変える！
+	// Our ModelViewProjection : multiplication of our 3 matrices
+	glm::mat4 MVP        = Projection * View * Model; // 行列の掛け算は逆になることを思い出してください。
+	GLuint MatrixID = glGetUniformLocation(shaderProgram.ID, "MVP");
+	glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &MVP[0][0]);
+
 
 	while (!glfwWindowShouldClose(window))
 	{
@@ -94,8 +133,9 @@ int main()
 		shaderProgram.Activate();
 		// Bind the VAO so OpenGL knows to use it
 		VAO1.Bind();
+		glUniformMatrix4fv(MatrixID, 1, GL_FALSE, glm::value_ptr(MVP));
 		// Draw primitives, number of indices, datatype of indices, index of indices
-		glDrawElements(GL_TRIANGLES, 9, GL_UNSIGNED_INT, 0);
+		glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
 		// Swap the back buffer with the front buffer
 		glfwSwapBuffers(window);
 		// Take care of all GLFW events
