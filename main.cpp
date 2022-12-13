@@ -8,25 +8,28 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-
+#include"textureClass.h"
 #include"shaderClass.h"
 #include"VAO.h"
 #include"VBO.h"
 #include"EBO.h"
 
+#include<stb/stb_image.h>
+#include<filesystem>
+namespace fs = std::filesystem;
 
 
 // Vertices coordinates
 GLfloat vertices[] =
 {
-	1.0f ,1.0f, 1.0f,
-	-1.0f,1.0f, 1.0f,
-	-1.0f,1.0f, -1.0f,
-	1.0f ,1.0f, -1.0f,
-	1.0f ,-1.0f, 1.0f,
-	-1.0f,-1.0f, 1.0f,
-	-1.0f,-1.0f, -1.0f,
-	1.0f ,-1.0f, -1.0f,
+	1.0f ,  1.0f,  1.0f, 0.0f, 0.0f, 
+	-1.0f,  1.0f,  1.0f, 0.0f, 1.0f,
+	-1.0f,  1.0f, -1.0f, 1.0f, 1.0f,
+	1.0f ,  1.0f, -1.0f, 1.0f, 0.0f,
+	1.0f , -1.0f,  1.0f, 1.0f, 1.0f,
+	-1.0f, -1.0f,  1.0f, 1.0f, 0.0f,
+	-1.0f, -1.0f, -1.0f, 0.0f, 1.0f,
+	1.0f , -1.0f, -1.0f, 0.0f, 0.0f
 };
 
 // Indices for vertices order
@@ -39,7 +42,7 @@ GLuint indices[] =
 	// Floor
 	4, 5, 6,
 	6, 7, 4,
-	
+
 	0, 1, 5,
 	5, 4, 0,
 
@@ -105,7 +108,16 @@ int main()
 	// Unbind all to prevent accidentally modifying them
 	VAO1.Unbind();
 	VBO1.Unbind();
-	EBO1.Unbind();;
+	EBO1.Unbind();
+
+	// 現在のディレクトリの位置を調べる。
+	std::string parentDir = (fs::current_path().fs::path::parent_path()).string();
+	std::string texPath = "/opengl-mac/";
+	std::cout << parentDir + texPath + "texture.jpg" << std::endl;
+	// Texture	
+	Texture texture((parentDir + texPath + "texture.jpg").c_str(), GL_TEXTURE_2D, GL_TEXTURE0, GL_RGB, GL_UNSIGNED_BYTE);
+	texture.texUnit(shaderProgram,"tex0", 0);
+
 
 	// 射影行列：45&deg;の視界、アスペクト比4:3、表示範囲：0.1単位  100単位
 	glm::mat4 Projection = glm::perspective(glm::radians(45.0f), 1.0f, 0.1f, 100.0f);
@@ -122,15 +134,22 @@ int main()
 	GLuint MatrixID = glGetUniformLocation(shaderProgram.ID, "MVP");
 	glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &MVP[0][0]);
 
+	// デプステストを有効にする
+	glEnable(GL_DEPTH_TEST);
+	// 前のものよりもカメラに近ければ、フラグメントを受け入れる
+	glDepthFunc(GL_LESS);
+
 
 	while (!glfwWindowShouldClose(window))
 	{
 		// Specify the color of the background
 		glClearColor(0.07f, 0.13f, 0.17f, 1.0f);
 		// Clean the back buffer and assign the new color to it
-		glClear(GL_COLOR_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT| GL_DEPTH_BUFFER_BIT);
 		// Tell OpenGL which Shader Program we want to use
 		shaderProgram.Activate();
+		// Bind Texture
+		texture.Bind();
 		// Bind the VAO so OpenGL knows to use it
 		VAO1.Bind();
 		glUniformMatrix4fv(MatrixID, 1, GL_FALSE, glm::value_ptr(MVP));
@@ -146,6 +165,7 @@ int main()
 	VAO1.Delete();
 	VBO1.Delete();
 	EBO1.Delete();
+	texture.Delete();
 	shaderProgram.Delete();
 	// Delete window before ending the program
 	glfwDestroyWindow(window);
