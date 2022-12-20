@@ -107,20 +107,18 @@ int main()
 	VBO1.Unbind();
 	EBO1.Unbind();;
 
-	// 射影行列：45&deg;の視界、アスペクト比4:3、表示範囲：0.1単位  100単位
+	// 射影行列
 	glm::mat4 Projection = glm::perspective(glm::radians(45.0f), 1.0f, 0.1f, 100.0f);
-	// カメラ行列
+	// ビュー行列
 	glm::mat4 View       = glm::lookAt(
 		glm::vec3(4,3,3), // ワールド空間でカメラは(4,3,3)にあります。
 		glm::vec3(0,0,0), // 原点を見ています。
 		glm::vec3(0,1,0)  // 頭が上方向(0,-1,0にセットすると上下逆転します。)
 	);
-	// モデル行列：単位行列(モデルは原点にあります。)
+	// モデル行列
 	glm::mat4 Model      = glm::mat4(1.0f);  // 各モデルを変える！
-	// Our ModelViewProjection : multiplication of our 3 matrices
 	glm::mat4 MVP        = Projection * View * Model; // 行列の掛け算は逆になることを思い出してください。
 	GLuint MatrixID = glGetUniformLocation(shaderProgram.ID, "MVP");
-	glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &MVP[0][0]);
 
 
 	while (!glfwWindowShouldClose(window))
